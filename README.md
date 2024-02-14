@@ -25,6 +25,7 @@ Created by vvsmmg. My telegram channel - https://t.me/vvsmmg0
 + Go to project folder in terminal 
 + Run ```pip install requirements.txt```
 + Set up config.py, wallets.txt and proxy.txt
++ Run ```python main.py``` (or ```python3 main.py```)
 
 ### Config.py
 Put your [2captcha](https://2captcha.com/?from=15327187) api key in thi s line

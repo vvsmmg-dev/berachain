@@ -1,0 +1,5 @@
+eth_account==0.5.9
+Faker==22.6.0
+loguru==0.7.0
+requests==2.28.2
+web3==5.27.0

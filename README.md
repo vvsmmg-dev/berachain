@@ -24,8 +24,11 @@ Created by vvsmmg. My telegram channel - https://t.me/vvsmmg0
 + Download this repository
 + Go to project folder in terminal 
 + Run ```pip install requirements.txt```
-+ Set up wallets.txt and proxy.txt
++ Set up config.py, wallets.txt and proxy.txt
 
+### Config.py
+Put your [2captcha](https://2captcha.com/?from=15327187) api key in thi s line
+```twocaptcha_apikey = ""```
 ### Wallets.txt
 Put your private keys in this file. 
 Each new line should contain new private key.

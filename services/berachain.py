@@ -3,7 +3,9 @@ import random
 import time
 
 import requests
+from faker import Faker
 from loguru import logger
+from solcx import set_solc_version, install_solc, compile_source
 from web3 import Web3
 
 from config.config import rpc_url
@@ -14,7 +16,9 @@ from config.abi import (
     bend_abi,
     bend_borrows_abi,
     ooga_booga_abi,
+    bera_name_abi
 )
+
 from config.contracts_addresses import (
     bex_swap_address,
     usdc_address,
@@ -27,6 +31,7 @@ from config.contracts_addresses import (
     wbear_address,
     zero_address,
     ooga_booga_address,
+    bera_name_address
 )
 
 
@@ -59,24 +64,25 @@ class BeraChain:
             self.ooga_booga_contract = self.w3.eth.contract(
                 address=ooga_booga_address, abi=ooga_booga_abi
             )
+            self.bera_name_contract = self.w3.eth.contract(address=bera_name_address, abi=bera_name_abi)
         except:
             raise ValueError(
-                "Wrong RPC. Recommended RPC: https://artio.rpc.berachain.com/"
+                "Wrong RPC. Recommended RPC: https://rpc.ankr.com/berachain_testnet"
             )
 
     def get_nonce(self, address):
         return self.w3.eth.get_transaction_count(address)
 
-    def claim_bera_from_faucet(self, address, twocaptcha, fake, proxies=None):
-        google_token = twocaptcha.get_2captcha_google_token()
-        if not google_token:
+    def claim_bera_from_faucet(self, address, twocaptcha, fake, proxy):
+        turnstile = twocaptcha.get_2captcha_turnstile_token()
+        if not turnstile:
             raise ValueError("Cannot get Google token. Check your 2captcha API key.")
         user_agent = fake.chrome()
         headers = {
-            "authority": "artio-80085-ts-faucet-api-2.berachain.com",
+            "authority": "artio-80085-faucet-api-cf.berachain.com",
             "accept": "*/*",
-            "accept-language": "zh-CN,zh;q=0.9",
-            "authorization": f"Bearer {google_token}",
+            "accept-language": "en-US;q=0.8,en;q=0.7",
+            "authorization": f"Bearer {turnstile}",
             "cache-control": "no-cache",
             "content-type": "text/plain;charset=UTF-8",
             "origin": "https://artio.faucet.berachain.com",
@@ -85,15 +91,22 @@ class BeraChain:
             "user-agent": user_agent,
         }
         params = {"address": address}
-        response = requests.post(
-            "https://artio-80085-faucet-api-recaptcha.berachain.com/api/claim",
-            params=params,
-            headers=headers,
-            data=json.dumps(params),
-            proxies=proxies,
-        )
-        return response
-
+        proxies = {
+            "http": proxy,
+            "https": proxy
+        }
+        try:
+            response = requests.post(
+                "https://artio-80085-faucet-api-cf.berachain.com/api/claim",
+                params=params,
+                headers=headers,
+                data=json.dumps(params),
+                proxies=proxies,
+            )
+            return response
+        except requests.exceptions.RequestException as e:
+            print("Error occurred:", e)
+            return None
     def approve_token(
         self, address, private_key, spender, amount: int, approve_token_address
     ):
@@ -108,7 +121,7 @@ class BeraChain:
             txn = approve_contract.functions.approve(spender, amount).buildTransaction(
                 {
                     "gas": 500000 + random.randint(1, 10000),
-                    "gasPrice": int(self.w3.eth.gas_price * 1.15),
+                    "gasPrice": int(self.w3.eth.gas_price * 1.5),
                     "nonce": self.get_nonce(address),
                 }
             )
@@ -205,7 +218,7 @@ class BeraChain:
             {
                 "gas": 500000 + random.randint(1, 10000),
                 "value": amount_in if asset_in_address == wbear_address else 0,
-                "gasPrice": int(self.w3.eth.gas_price * 1.2),
+                "gasPrice": int(self.w3.eth.gas_price * 1.5),
                 "nonce": self.get_nonce(spender),
             }
         )
@@ -241,7 +254,7 @@ class BeraChain:
         ).buildTransaction(
             {
                 "gas": 500000 + random.randint(1, 10000),
-                "gasPrice": int(self.w3.eth.gas_price * 1.15),
+                "gasPrice": int(self.w3.eth.gas_price * 1.5),
                 "nonce": self.get_nonce(spender),
             }
         )
@@ -272,7 +285,7 @@ class BeraChain:
         ).buildTransaction(
             {
                 "gas": 500000 + random.randint(1, 10000),
-                "gasPrice": int(self.w3.eth.gas_price * 1.15),
+                "gasPrice": int(self.w3.eth.gas_price * 1.5),
                 "nonce": self.get_nonce(spender),
             }
         )
@@ -304,7 +317,7 @@ class BeraChain:
         ).buildTransaction(
             {
                 "gas": 500000 + random.randint(1, 10000),
-                "gasPrice": int(self.w3.eth.gas_price * 1.15),
+                "gasPrice": int(self.w3.eth.gas_price * 1.5),
                 "nonce": self.get_nonce(address),
             }
         )
@@ -345,7 +358,7 @@ class BeraChain:
         ).buildTransaction(
             {
                 "gas": 500000 + random.randint(1, 10000),
-                "gasPrice": int(self.w3.eth.gas_price * 1.15),
+                "gasPrice": int(self.w3.eth.gas_price * 1.5),
                 "nonce": self.get_nonce(address),
             }
         )
@@ -365,7 +378,7 @@ class BeraChain:
         ).buildTransaction(
             {
                 "gas": 500000 + random.randint(1, 10000),
-                "gasPrice": int(self.w3.eth.gas_price * 1.15),
+                "gasPrice": int(self.w3.eth.gas_price * 1.5),
                 "nonce": self.get_nonce(address),
             }
         )
@@ -397,12 +410,43 @@ class BeraChain:
             dict(
                 chainId=80085,
                 nonce=self.get_nonce(address),
-                gasPrice=int(self.w3.eth.gas_price * 1.15),
-                gas=134500 + random.randint(1, 10000),
+                gasPrice=int(self.w3.eth.gas_price * 1.5),
+                gas= 500000 + random.randint(1, 10000),
                 to=self.w3.toChecksumAddress(ooga_booga_address),
                 data="0xa6f2ae3a",
             ),
             private_key.strip(),
         )
+        order_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+        return order_hash.hex()
+
+    def deploy_contract(self, address, private_key):
+        solc_version = install_solc('0.4.18')
+        set_solc_version(solc_version)
+        with open('config/WETH.sol', 'r') as f:
+            code = f.read()
+        compiled_sol = compile_source(code)
+        contract_id, contract_interface = compiled_sol.popitem()
+        txn = dict(
+            chainId=80085,
+            gas= 2000000 + random.randint(1, 10000),
+            gasPrice=int(self.w3.eth.gas_price * 1.5),
+            nonce=self.get_nonce(address),
+            data=contract_interface['bin'])
+        signed_txn = self.w3.eth.account.sign_transaction(txn, private_key=private_key.strip())
+        order_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+        return order_hash.hex()
+
+    def create_bera_name(self, address, private_key):
+        fake = Faker('en_US')
+
+        name = fake.name().replace(" ", "").strip()
+        txn = self.bera_name_contract.functions.mintNative(chars=list(name), duration=1,
+                                                           whois=address,
+                                                           metadataURI='https://beranames.com/api/metadata/69',
+                                                           to=address).buildTransaction(
+            {'gas': 2000000, 'gasPrice': int(self.w3.eth.gas_price * 1.15),
+             'nonce': self.get_nonce(address), 'value': int(608614232209737)})
+        signed_txn = self.w3.eth.account.sign_transaction(txn, private_key=private_key.strip())
         order_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
         return order_hash.hex()

@@ -3,3 +3,4 @@ Faker==22.6.0
 loguru==0.7.0
 requests==2.28.2
 web3==5.27.0
+py-solc-x==2.0.2

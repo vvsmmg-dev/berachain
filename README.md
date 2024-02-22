@@ -11,13 +11,14 @@ Created by vvsmmg. My telegram channel - https://t.me/vvsmmg0
 5. Deposit to bend
 6. Borrow from bend
 7. Mint honey jar
-8. Contract creating (in progress)
+8. Beranames mint
+9. Contract creating 
 
 ### Menu 
 1. Claim Bera for all wallets
 2. Start base route for all wallets
 3. Choose activity for wallets
-4. Random activity on the wallets (not implented yet // to do)
+4. Random activity on the wallets
 
 ### Installation  
 + Install Python v3.10
@@ -35,5 +36,5 @@ Put your private keys in this file.
 Each new line should contain new private key.
 ### Proxy.txt
 Proxy is needed to claim and do swaps. 
-Proxy format: https://ip:port@log:pass
+Proxy format: https://log:pass@ip:port
 

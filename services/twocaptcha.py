@@ -35,3 +35,23 @@ class TwoCaptcha:
             else:
                 time.sleep(3)
         return False
+
+    def get_2captcha_turnstile_token(self):
+        if self.twocaptcha_apikey == "":
+            raise ValueError("2Captcha API key is null. Check your config.py")
+        params = {'key': self.twocaptcha_apikey, 'method': 'turnstile',
+                  'sitekey': '0x4AAAAAAARdAuciFArKhVwt',
+                  'pageurl': 'https://artio.faucet.berachain.com/',
+                  'json': 1}
+        response = requests.get(f'https://2captcha.com/in.php?', params=params).json()
+        if response['status'] != 1:
+            raise ValueError(response)
+        task_id = response['request']
+        for _ in range(60):
+            response = requests.get(
+                f'https://2captcha.com/res.php?key={self.twocaptcha_apikey}&action=get&id={task_id}&json=1').json()
+            if response['status'] == 1:
+                return response['request']
+            else:
+                time.sleep(3)
+        return False

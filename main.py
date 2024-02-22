@@ -44,7 +44,7 @@ def claim_bera(wallets, proxies):
         logger.info(f"Claiming BERA for {account.address} using proxy {proxy}...")
         try:
             response = bera.claim_bera_from_faucet(
-                account.address, captcha_solver, faker, proxies={"http": proxy}
+                account.address, captcha_solver, faker, proxy
             )
             if response.ok:
                 logger.success(f"Successfully claimed BERA for {account.address}.")
@@ -56,7 +56,7 @@ def claim_bera(wallets, proxies):
             logger.error(
                 f"Exception occurred while claiming BERA for {account.address}: {str(e)}"
             )
-        time.sleep(1)
+        time.sleep(2)
 
 
 def bex_swap(wallet_key, asset_in_address, asset_out_address, amount_in):
@@ -203,9 +203,39 @@ def honey_jar_mint(wallet_key):
     finally:
         time.sleep(2)
 
+def deploy_contract(wallet_key):
+    account = Account.from_key(wallet_key.strip())
+    address = account.address.strip()
+    logger.info(f"Deploying contract for {address}...")
+    try:
+        result = bera.deploy_contract(address, wallet_key)
+        if "ERR" not in result:
+            logger.success(f"Deploy success. TxID: {result}")
+        else:
+            logger.error(f"Failed to deploy contract for {address}: {result}")
+    except Exception as e:
+        logger.error(f"Exception during contract deploying for {address}: {str(e)}")
+    finally:
+        time.sleep(2)
+
+def bera_name(wallet_key):
+    account = Account.from_key(wallet_key.strip())
+    address = account.address.strip()
+    logger.info(f"Creating bera name for {address}...")
+    try:
+        result = bera.create_bera_name(address, wallet_key)
+        if "ERR" not in result:
+            logger.success(f"Create success. TxID: {result}")
+        else:
+            logger.error(f"Failed to create bera name for {address}: {result}")
+    except Exception as e:
+        logger.error(f"Exception during bera name for {address}: {str(e)}")
+    finally:
+        time.sleep(2)
+
 
 def main_menu():
-    print("BeraChain Software || Created by t.me/vvsmmg1")
+    print("BeraChain Software || Created by t.me/vvsmmg0")
     print("1. Claim Bera for all wallets")
     print("2. Start base route for all wallets")
     print("3. Choose activity for wallets")
@@ -222,12 +252,47 @@ def choose_activity_menu():
     print("5. Deposit to Bend")
     print("6. Borrow from Bend")
     print("7. Mint Honey Jar")
-    print("8. Back to main menu")
+    print("8. Deploy contract")
+    print("9. Bera name create")
+    print("10. Back to main menu")
 
 
-# Random activity
 def perform_random_activity():
-    logger.info("Not implemented yet.")
+    for wallet_key in wallets:
+        account = Account.from_key(wallet_key.strip())
+        activities = [
+            lambda: bex_swap(wallet_key, wbear_address, usdc_address,
+                             int(random.randrange(1, 3, 1) / 10 * bera.w3.eth.get_balance(account.address))),
+            lambda: bex_swap(wallet_key, wbear_address, weth_address,
+                             int(random.randrange(1, 3, 1) / 10 * bera.usdc_contract.functions.balanceOf(
+                                 account.address).call())),
+
+            lambda: add_liquidity_usdc(wallet_key, int(random.randrange(1, 3,
+                                                                        1) / 10 * bera.usdc_contract.functions.balanceOf(
+                account.address).call())),
+            lambda: add_liquidity_weth(wallet_key, int(random.randrange(1, 3,
+                                                                        1) / 10 * bera.weth_contract.functions.balanceOf(
+                account.address).call())),
+            lambda: mint_honey(wallet_key,
+                               int(random.randrange(1, 3, 1) / 10 * bera.usdc_contract.functions.balanceOf(
+                                   account.address).call())),
+            lambda: redeem_honey(wallet_key,
+                                 int(random.randrange(1, 3, 1) / 10 * bera.honey_contract.functions.balanceOf(
+                                     account.address).call())),
+            lambda: deposit_bend(wallet_key, usdc_address,
+                                 int(random.randrange(1, 3, 1) / 10 * bera.usdc_contract.functions.balanceOf(
+                                     account.address).call())),
+            lambda: borrow_bend(wallet_key, weth_address, 0.01 * 10 ** 18),
+            lambda: honey_jar_mint(wallet_key),
+            lambda: deploy_contract(wallet_key),
+            lambda: bera_name(wallet_key)
+        ]
+
+        random.shuffle(activities)
+
+        for activity in activities:
+            activity()
+            time.sleep(random.randint(5, 30))
 
 
 def main():
@@ -242,68 +307,71 @@ def main():
                 account = Account.from_key(wallet_key.strip())
                 bera_balance = bera.w3.eth.get_balance(account.address)
                 amount_in_bera_to_usdc = int(
-                    random.randrange(1, 5, 1) / 10 * bera_balance
+                    random.randrange(1, 3, 1) / 10 * bera_balance
                 )
                 amount_in_bera_to_weth = int(
-                    random.randrange(1, 5, 1) / 10 * bera_balance
+                    random.randrange(1, 3, 1) / 10 * bera_balance
                 )
 
                 bex_swap(
                     wallet_key, wbear_address, usdc_address, amount_in_bera_to_usdc
                 )
-                time.sleep(3)
+                time.sleep(5)
                 bex_swap(
                     wallet_key, wbear_address, weth_address, amount_in_bera_to_weth
                 )
 
                 usdc_balance = int(
-                    random.randrange(1, 5, 1)
+                    random.randrange(1, 3, 1)
                     / 10
                     * bera.usdc_contract.functions.balanceOf(account.address).call()
                 )
                 weth_balance = int(
-                    random.randrange(1, 5, 1)
+                    random.randrange(1, 3, 1)
                     / 10
                     * bera.weth_contract.functions.balanceOf(account.address).call()
                 )
 
                 add_liquidity_usdc(wallet_key, usdc_balance)
-                time.sleep(3)
+                time.sleep(5)
                 add_liquidity_weth(wallet_key, weth_balance)
 
                 usdc_balance = int(
-                    random.randrange(1, 5, 1)
+                    random.randrange(1, 3, 1)
                     / 10
                     * bera.usdc_contract.functions.balanceOf(account.address).call()
                 )
 
                 mint_honey(wallet_key, usdc_balance)
-                time.sleep(3)
-                # Redeem Honey
+                time.sleep(5)
+
                 amount_honey = int(
-                    random.randrange(1, 5, 1)
+                    random.randrange(1, 3, 1)
                     / 10
                     * bera.honey_contract.functions.balanceOf(account.address).call()
                 )
                 redeem_honey(wallet_key, amount_honey)
 
-                time.sleep(3)
-                # Deposit USDC
+                time.sleep(5)
                 deposit_amount_usdc = int(
-                    random.randrange(1, 5, 1)
+                    random.randrange(1, 3, 1)
                     / 10
                     * bera.usdc_contract.functions.balanceOf(account.address).call()
                 )
                 deposit_bend(wallet_key, usdc_address, deposit_amount_usdc)
 
-                time.sleep(3)
-                # Borrow WETH
-                borrow_amount_weth = 0.01 * 10**18
+                time.sleep(5)
+                borrow_amount_weth = 0.01 * 10 ** 18
                 borrow_bend(wallet_key, weth_address, borrow_amount_weth)
 
-                # Mint Honey Jar
-                time.sleep(3)
+                time.sleep(5)
                 honey_jar_mint(wallet_key)
+
+                time.sleep(5)
+                deploy_contract(wallet_key)
+
+                time.sleep(5)
+                bera_name(wallet_key)
 
         elif choice == "3":
             while True:
@@ -402,6 +470,14 @@ def main():
                         honey_jar_mint(wallet_key)
 
                 elif activity_choice == "8":
+                    for wallet_key in wallets:
+                        deploy_contract(wallet_key)
+
+                elif activity_choice == "9":
+                    for wallet_key in wallets:
+                        bera_name(wallet_key)
+
+                elif activity_choice == "10":
                     break
 
         elif choice == "4":
